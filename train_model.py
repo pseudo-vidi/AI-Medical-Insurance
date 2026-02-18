@@ -28,7 +28,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 model = RandomForestRegressor(n_estimators=100, random_state=42)
 model.fit(X_train, y_train)
 
-# 4. SAVE THE MODEL (.pkl file for Michael)
+# 4. SAVE THE MODEL (.pkl file)
 with open('medical_insurance_model.pkl', 'wb') as f:
     pickle.dump(model, f)
 print("Deliverable Created: medical_insurance_model.pkl")
@@ -44,7 +44,7 @@ def get_multi_insurer_estimates(prediction):
         "Canada Life (Elite Plan)": round(prediction * 1.30, 2)  # Premium coverage benchmark
     }
 
-# 6. TEST DEMO (Example for the meeting)
+# 6. TEST DEMO 
 test_person = [[30, 1, 24.5, 0, 0, 1]] # Age 30, Male, BMI 24.5, 0 kids, Non-smoker
 base_pred = model.predict(test_person)[0]
 estimates = get_multi_insurer_estimates(base_pred)
