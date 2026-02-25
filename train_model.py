@@ -4,10 +4,9 @@ import pickle
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import r2_score, mean_absolute_error
 
-# 1. LOAD DATA
-# We use pandas to read the raw CSV file containing insurance records.
+# 1. DATA LOADING
+# Load the insurance dataset containing health and cost information.
 try:
     df = pd.read_csv('insurance.csv')
     print("Dataset loaded successfully!")
@@ -15,57 +14,56 @@ except FileNotFoundError:
     print("Error: insurance.csv not found.")
 
 # 2. PREPROCESSING
-# ML models require numerical input. We convert categorical text data into integers.
-# Sex and Smoker are binary (0 or 1).
+# Convert categorical text data (strings) into numbers so the ML models can process them.
 df['sex'] = df['sex'].map({'female': 0, 'male': 1})
 df['smoker'] = df['smoker'].map({'yes': 1, 'no': 0})
-
-# 'region' has 4 categories. factorize() assigns a unique number to each (0, 1, 2, 3).
+# 'region' is converted into unique integers (0-3).
 df['region'] = pd.factorize(df['region'])[0]
 
-# Split data into Features (X) and Target (y - the price we want to predict).
+# Features (X) are the independent variables; Target (y) is the premium cost.
 X = df[['age', 'sex', 'bmi', 'children', 'smoker', 'region']]
 y = df['charges']
 
-# Split the data: 80% for training the AI, 20% for testing its accuracy on new data.
+# Split data: 80% for training the 'brain', 20% for testing its accuracy later.
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# 3. INITIALIZE MODELS
-# We define three different algorithms to see which one handles the data best.
+# 3. DEFINE MULTI-INSURER LOGIC
+# This function calculates tiered pricing based on a single AI prediction.
+# We define it here so it can be packaged inside each .pkl file.
+def get_multi_insurer_estimates(prediction):
+    return {
+        "Sun Life (Value Plan)": round(prediction * 0.85, 2), # 15% discount benchmark
+        "Manulife (Standard Plan)": round(prediction * 1.0, 2),  # Base AI prediction
+        "Canada Life (Elite Plan)": round(prediction * 1.30, 2)  # 30% premium benchmark
+    }
+
+# 4. INITIALIZE THE THREE REGRESSION MODELS
 models = {
-    # Random Forest: A collection of decision trees that averages results.
     "RandomForest": RandomForestRegressor(n_estimators=100, random_state=42),
-    
-    # Linear Regression: Predicts a straight-line relationship between inputs and output.
     "LinearRegression": LinearRegression(),
-    
-    # Gradient Boosting: Builds trees one by one, each correcting the previous tree's errors.
     "GradientBoosting": GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
 }
 
-results = {}
-
-# 4. TRAINING AND EVALUATION LOOP
+# 5. TRAINING AND BUNDLING PROCESS
 for name, model in models.items():
-    # 'Fit' is the actual learning process where the model studies X_train to predict y_train.
+    # Model learns the relationship between health factors and insurance charges.
     model.fit(X_train, y_train)
     
-    # Test the model on the 20% of data it hasn't seen yet.
-    predictions = model.predict(X_test)
+    # BUNDLE CREATION:
+    # Instead of just saving the model, we create a dictionary.
+    # This stores the model AND the function we defined in Step 3.
+    model_bundle = {
+        "model_object": model,          # The trained regression model
+        "pricing_logic": get_multi_insurer_estimates, # The comparison function
+        "algorithm_name": name          # Metadata about which algorithm was used
+    }
     
-    # Calculate R2 Score (Accuracy: 1.0 is perfect) and MAE (Average error in dollars).
-    r2 = r2_score(y_test, predictions)
-    mae = mean_absolute_error(y_test, predictions)
-    results[name] = {"R2": round(r2, 4), "MAE": round(mae, 2)}
-    
-    # 5. EXPORT MODELS
-    # Save each trained "brain" to a file so it can be reused in other scripts without retraining.
-    filename = f'medical_insurance_{name.lower()}_model.pkl'
+    # SAVE THE BUNDLE
+    # We use 'wb' (write binary) to serialize the entire dictionary into a .pkl file.
+    filename = f'medical_insurance_{name.lower()}_bundle.pkl'
     with open(filename, 'wb') as f:
-        pickle.dump(model, f)
-    print(f"Saved: {filename}")
+        pickle.dump(model_bundle, f)
+    
+    print(f"Successfully created and bundled: {filename}")
 
-# 6. DISPLAY PERFORMANCE
-# Print a table to compare which model performed best.
-print("\nModel Comparison Results:")
-print(pd.DataFrame(results).T)
+print("\nDeployment ready: Each .pkl now contains both the AI model and the pricing logic.")
