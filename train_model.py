@@ -1,55 +1,71 @@
 import pandas as pd
 import numpy as np
 import pickle
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score, mean_absolute_error
 
 # 1. LOAD DATA
-# Ensure 'insurance.csv' is uploaded to the main Files area in Colab
+# We use pandas to read the raw CSV file containing insurance records.
 try:
     df = pd.read_csv('insurance.csv')
     print("Dataset loaded successfully!")
 except FileNotFoundError:
-    print("Error: insurance.csv not found. Please upload it to the Files sidebar.")
+    print("Error: insurance.csv not found.")
 
-# 2. PREPROCESSING (Converting text to numbers)
-# Mapping categories as discussed in the project intro
+# 2. PREPROCESSING
+# ML models require numerical input. We convert categorical text data into integers.
+# Sex and Smoker are binary (0 or 1).
 df['sex'] = df['sex'].map({'female': 0, 'male': 1})
 df['smoker'] = df['smoker'].map({'yes': 1, 'no': 0})
-# For region, we use simple numeric encoding
+
+# 'region' has 4 categories. factorize() assigns a unique number to each (0, 1, 2, 3).
 df['region'] = pd.factorize(df['region'])[0]
 
-# Defining features and target based on Kaggle data
+# Split data into Features (X) and Target (y - the price we want to predict).
 X = df[['age', 'sex', 'bmi', 'children', 'smoker', 'region']]
 y = df['charges']
 
-# 3. TRAIN THE MODEL (Using Random Forest as planned)
+# Split the data: 80% for training the AI, 20% for testing its accuracy on new data.
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-model = RandomForestRegressor(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
 
-# 4. SAVE THE MODEL (.pkl file)
-with open('medical_insurance_model.pkl', 'wb') as f:
-    pickle.dump(model, f)
-print("Deliverable Created: medical_insurance_model.pkl")
+# 3. INITIALIZE MODELS
+# We define three different algorithms to see which one handles the data best.
+models = {
+    # Random Forest: A collection of decision trees that averages results.
+    "RandomForest": RandomForestRegressor(n_estimators=100, random_state=42),
+    
+    # Linear Regression: Predicts a straight-line relationship between inputs and output.
+    "LinearRegression": LinearRegression(),
+    
+    # Gradient Boosting: Builds trees one by one, each correcting the previous tree's errors.
+    "GradientBoosting": GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, max_depth=3, random_state=42)
+}
 
-# 5. MULTI-INSURER COMPARISON LOGIC (Real-world Benchmarks)
-def get_multi_insurer_estimates(prediction):
-    """
-    Applies Canadian market benchmarking to the core AI prediction.
-    """
-    return {
-        "Sun Life (Value Plan)": round(prediction * 0.85, 2), # Entry-level benchmark
-        "Manulife (Standard Plan)": round(prediction * 1.0, 2),  # Industry average
-        "Canada Life (Elite Plan)": round(prediction * 1.30, 2)  # Premium coverage benchmark
-    }
+results = {}
 
-# 6. TEST DEMO 
-test_person = [[30, 1, 24.5, 0, 0, 1]] # Age 30, Male, BMI 24.5, 0 kids, Non-smoker
-base_pred = model.predict(test_person)[0]
-estimates = get_multi_insurer_estimates(base_pred)
+# 4. TRAINING AND EVALUATION LOOP
+for name, model in models.items():
+    # 'Fit' is the actual learning process where the model studies X_train to predict y_train.
+    model.fit(X_train, y_train)
+    
+    # Test the model on the 20% of data it hasn't seen yet.
+    predictions = model.predict(X_test)
+    
+    # Calculate R2 Score (Accuracy: 1.0 is perfect) and MAE (Average error in dollars).
+    r2 = r2_score(y_test, predictions)
+    mae = mean_absolute_error(y_test, predictions)
+    results[name] = {"R2": round(r2, 4), "MAE": round(mae, 2)}
+    
+    # 5. EXPORT MODELS
+    # Save each trained "brain" to a file so it can be reused in other scripts without retraining.
+    filename = f'medical_insurance_{name.lower()}_model.pkl'
+    with open(filename, 'wb') as f:
+        pickle.dump(model, f)
+    print(f"Saved: {filename}")
 
-print("\n--- MEETING DEMO RESULTS ---")
-print(f"Base AI Prediction: ${base_pred:,.2f}")
-for company, price in estimates.items():
-    print(f"{company}: ${price:,.2f}")
+# 6. DISPLAY PERFORMANCE
+# Print a table to compare which model performed best.
+print("\nModel Comparison Results:")
+print(pd.DataFrame(results).T)
