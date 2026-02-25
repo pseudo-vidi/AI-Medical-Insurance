@@ -1,44 +1,67 @@
-# Medical Insurance AI Premium Predictor
+# Medical Insurance AI Premium Predictor (Multi-Model Edition)
 
 ## Project Overview
-
-This project is an AI/ML initiative designed to estimate medical insurance premiums based on individual health and lifestyle factors. Developed as a proof-of-concept for an external partnership, the system provides a comparative analysis across multiple insurance providers to help users understand cost variations in the Canadian market.
+This AI/ML initiative estimates medical insurance premiums based on individual health and lifestyle factors. Designed as a proof-of-concept for the Canadian market, the system provides a comparative analysis across multiple insurance providers using three distinct regression methods to ensure the most accurate cost estimation.
 
 ## Key Deliverables
-
-* **Validated ML Model:** A trained `RandomForestRegressor` saved as a serialized `.pkl` file for production use.
-* **Source Code Repository:** Complete scripts for data cleaning, feature engineering, and model training.
-* **Multi-Insurer Framework:** A logic-based system providing simultaneous quotes for at least three major insurers.
+* **Serialized Model Bundles:** Three trained models (`RandomForest`, `LinearRegression`, and `GradientBoosting`) saved as `.pkl` bundles.
+* **Integrated Logic:** Each bundle contains both the predictive "brain" and the multi-insurer pricing logic for seamless deployment.
+* **Multi-Insurer Framework:** A system providing simultaneous quotes for Sun Life, Manulife, and Canada Life.
 
 ## Data Strategy
-
-The model is built on ethically sourced, public data to maintain academic and professional integrity:
-
+The model utilizes ethically sourced data to maintain academic and professional integrity:
 * **Primary Engine:** Kaggle Medical Insurance Dataset (Age, Sex, BMI, Children, Smoker Status, Region).
-* **Contextual Support:** Canadian Open Government Data used to justify regional risk and cost variations.
+* **Preprocessing:** Categorical data is mapped (Sex, Smoker) and factorized (Region) to ensure compatibility with all three regression algorithms.
 
 ## Multi-Insurer Logic
+The AI model acts as a "Base Predictor." Each bundle includes a pricing function that adjusts this base rate using real-world Canadian insurer benchmarks:
+* **Sun Life (Value Plan):** Optimized for entry-level affordability (85% of base).
+* **Manulife (Standard Plan):** Focused on industry-average pricing (100% of base).
+* **Canada Life (Elite Plan):** Calculated for comprehensive coverage (130% of base).
 
-As requested, the system integrates a value proposition of sharing multiple estimates. The AI model acts as a "Base Predictor," which is then adjusted using real-world Canadian insurer benchmarks:
+## Model Comparison & Performance
+The system evaluates three different approaches to find the best fit for insurance data:
+1.  **Linear Regression:** Provides a transparent, baseline mathematical relationship.
+2.  **Random Forest:** An ensemble method that handles non-linear health risks effectively.
+3.  **Gradient Boosting:** A sequential learning method often providing the highest accuracy for tabular data.
 
-* **Sun Life (Value Tier):** Optimized for entry-level affordability.
-* **Manulife (Standard Tier):** Focused on industry-average wellness-based pricing.
-* **Canada Life (Premium Tier):** Calculated for high-limit comprehensive coverage.
+
 
 ## Regulatory & HIPAA Compliance
-
-To ensure the software meets government regulatory standards, the following processes are implemented:
-
 | Process | Implementation |
-| --- | --- |
-| **Data De-identification** | Strictly using anonymized open-source data; no Protected Health Information (PHI) is collected or stored.
+| :--- | :--- |
+| **Data De-identification** | Uses anonymized open-source data; no Protected Health Information (PHI) is stored. |
 | **Safe Harbor Method** | Removal of all 18 HIPAA identifiers from training sets to ensure privacy by design. |
-| **Data Minimization** | The model only processes the "Minimum Necessary" fields required for an accurate estimate.
-| **Encryption Roadmap** | Future development includes AES-256 bit encryption at rest and TLS 1.2+ for data in transit. |
+| **Data Minimization** | Processes only the "Minimum Necessary" fields required for an accurate estimate. |
 
 ## How to Use
 
-1. **Environment:** Run the provided scripts in a Python environment (VS Code) or Google Colab.
-2. **Training:** Run `train_model.py` to process `insurance.csv` and generate the `medical_insurance_model.pkl` file.
-3. **Inference:** Use the model to predict a base rate, which the system then converts into a multi-insurer comparison.
+### 1. Training
+Run `train_model.py` to process `insurance.csv`. This will generate three files:
+* `medical_insurance_randomforest_bundle.pkl`
+* `medical_insurance_linearregression_bundle.pkl`
+* `medical_insurance_gradientboosting_bundle.pkl`
 
+### 2. Inference (Loading & Using)
+To use any of the models in your application, use the following code structure:
+
+```python
+import pickle
+
+# Load the desired bundle (e.g., Gradient Boosting)
+with open('medical_insurance_gradientboosting_bundle.pkl', 'rb') as f:
+    bundle = pickle.load(f)
+
+# Access the components from the bundle
+my_model = bundle["model_object"]
+calc_logic = bundle["pricing_logic"]
+
+# 1. Get base prediction (ensure input data is preprocessed)
+# Example: base_price = my_model.predict([[19, 0, 27.9, 0, 1, 3]])[0]
+base_price = my_model.predict(user_input_data)[0]
+
+# 2. Get insurer comparisons automatically
+final_quotes = calc_logic(base_price)
+
+print(f"Algorithm Used: {bundle['algorithm_name']}")
+print(f"Comparison Results: {final_quotes}")
