@@ -1,11 +1,12 @@
 # Medical Insurance AI Premium Predictor (Multi-Model Edition)
 
 ## Project Overview
-This AI/ML initiative estimates medical insurance premiums based on individual health and lifestyle factors. Designed as a proof-of-concept for the Canadian market, the system provides a comparative analysis across multiple insurance providers using three distinct regression methods to ensure the most accurate cost estimation.
+This AI/ML initiative estimates medical insurance premiums based on individual health and lifestyle factors. Designed as a proof-of-concept for the Canadian market, the system provides a comparative analysis across multiple insurance providers using five distinct regression methods (including Deep Learning) to ensure the most accurate cost estimation.
 
 ## Key Deliverables
-* **Serialized Model Bundles:** Three trained models (`RandomForest`, `LinearRegression`, and `GradientBoosting`) saved as `.pkl` bundles.
-* **Integrated Logic:** Each bundle contains both the predictive "brain" and the multi-insurer pricing logic for seamless deployment.
+* **Serialized Model Bundles:** Five trained models (`RandomForest`, `LinearRegression`, `GradientBoosting`, `DNN`, and `LSTM`) saved as `.pkl` bundles.
+* **Performance Intelligence:** Integrated `model_stats.pkl` for raw performance logging and `model_comparison.md` for human-readable rankings.
+* **Integrated Logic:** Each bundle contains the predictive "brain," a feature scaler, and the multi-insurer pricing logic for seamless deployment.
 * **Multi-Insurer Framework:** A system providing simultaneous quotes for Sun Life, Manulife, and Canada Life.
 
 ## Technology Stack
@@ -17,7 +18,7 @@ The project leverages the following industry-standard AI/ML libraries:
 ## Data Strategy
 The model utilizes ethically sourced data to maintain academic and professional integrity:
 * **Primary Engine:** Kaggle Medical Insurance Dataset (Age, Sex, BMI, Children, Smoker Status, Region).
-* **Preprocessing:** Categorical data is mapped (Sex, Smoker) and factorized (Region) to ensure compatibility with all three regression algorithms.
+* **Preprocessing:** Categorical data is mapped (Sex, Smoker) and factorized (Region). Features are standardized using `StandardScaler` to ensure compatibility with deep learning architectures.
 
 ## Multi-Insurer Logic
 The AI model acts as a "Base Predictor." Each bundle includes a pricing function that adjusts this base rate using real-world Canadian insurer benchmarks:
@@ -27,9 +28,11 @@ The AI model acts as a "Base Predictor." Each bundle includes a pricing function
 
 ## Model Comparison & Performance
 The system evaluates three different approaches to find the best fit for insurance data:
-1.  **Linear Regression:** Provides a transparent, baseline mathematical relationship.
-2.  **Random Forest:** An ensemble method that handles non-linear health risks effectively.
-3.  **Gradient Boosting:** A sequential learning method often providing the highest accuracy for tabular data.
+1.  **Linear Regression:** Provides a transparent, baseline mathematical relationship.
+2.  **Random Forest:** An ensemble method that handles non-linear health risks effectively.
+3.  **Gradient Boosting:** A sequential learning method providing the highest accuracy for this tabular data.
+4.  **Deep Neural Network (DNN):** A multi-layer architecture for capturing complex, non-linear relationships at scale.
+5.  **LSTM (Long Short-Term Memory):** A recurrent architecture typically used for sequences, applied here to capture deep feature dependencies.
 
 
 
@@ -43,10 +46,14 @@ The system evaluates three different approaches to find the best fit for insuran
 ## How to Use
 
 ### 1. Training
-Run `train_model.py` to process `insurance.csv`. This will generate three files:
+Run `train_model.py` to process `insurance.csv`. This will generate five bundles:
 * `medical_insurance_randomforest_bundle.pkl`
 * `medical_insurance_linearregression_bundle.pkl`
 * `medical_insurance_gradientboosting_bundle.pkl`
+* `medical_insurance_dnn_bundle.pkl`
+* `medical_insurance_lstm_bundle.pkl`
+
+Additionally, it produces `model_stats.pkl` (serialized metrics) and `model_comparison.md` (leaderboard).
 
 ### 2. Inference (Loading & Using)
 To use any of the models in your application, use the following code structure:
@@ -56,7 +63,7 @@ import pickle
 
 # Load the desired bundle (e.g., Gradient Boosting)
 with open('medical_insurance_gradientboosting_bundle.pkl', 'rb') as f:
-    bundle = pickle.load(f)
+    bundle = pickle.load(f)
 
 # Access the components from the bundle
 my_model = bundle["model_object"]
